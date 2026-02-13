@@ -1,98 +1,192 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useRouter } from "expo-router";
+import { Formik } from "formik";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import * as Yup from "yup";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+// Validation Schema
+const LoginSchema = Yup.object().shape({
+  identifier: Yup.string()
+    .required("Username or phone number is required")
+    .test(
+      "username-or-phone",
+      "Enter a valid username (min 3 chars) or phone number (9–15 digits)",
+      (value) => {
+        if (!value) return false;
+        const isPhone = /^\+?\d{9,15}$/.test(value);
+        const isUsername = /^[a-zA-Z0-9._]{3,}$/.test(value);
+        return isPhone || isUsername;
+      },
+    ),
+  password: Yup.string()
+    .min(6, "Password must be at least 6 characters")
+    .required("Password is required"),
+});
 
-export default function HomeScreen() {
+export default function DriverLogin() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (values, { resetForm }) => {
+    // ✅ Driver Console Logs
+    console.log("🚚 Driver Login Submitted:");
+    console.log("Identifier (username or phone):", values.identifier);
+    console.log("Password:", values.password);
+    console.log("Timestamp:", new Date().toISOString());
+
+    // Simulate loading state
+    setLoading(true);
+
+    setTimeout(() => {
+      setLoading(false);
+      resetForm();
+
+      Alert.alert(
+        "Success",
+        "Driver login form submitted! Check console logs.",
+      );
+
+      // Example future navigation
+      // router.replace("/driver/dashboard");
+    }, 1500);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <Text style={styles.title}>Driver Login</Text>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <Formik
+        initialValues={{ identifier: "", password: "" }}
+        validationSchema={LoginSchema}
+        onSubmit={handleLogin}
+      >
+        {({
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          values,
+          errors,
+          touched,
+          isValid,
+        }) => (
+          <>
+            {/* Username or Phone Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                placeholder="Username or Phone Number"
+                onChangeText={handleChange("identifier")}
+                onBlur={handleBlur("identifier")}
+                value={values.identifier}
+                keyboardType="default"
+                autoCapitalize="none"
+                style={[
+                  styles.input,
+                  errors.identifier && touched.identifier && styles.inputError,
+                ]}
+              />
+
+              {errors.identifier && touched.identifier && (
+                <Text style={styles.errorText}>{errors.identifier}</Text>
+              )}
+            </View>
+
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                placeholder="Password"
+                onChangeText={handleChange("password")}
+                onBlur={handleBlur("password")}
+                value={values.password}
+                secureTextEntry
+                autoCapitalize="none"
+                style={[
+                  styles.input,
+                  errors.password && touched.password && styles.inputError,
+                ]}
+              />
+
+              {errors.password && touched.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
+            </View>
+
+            {/* Login Button */}
+            <TouchableOpacity
+              style={[
+                styles.button,
+                (!isValid || loading) && styles.buttonDisabled,
+              ]}
+              onPress={handleSubmit}
+              disabled={!isValid || loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="r#d47d0a" />
+              ) : (
+                <Text style={styles.buttonText}>LOGIN</Text>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
+      </Formik>
+    </View>
   );
 }
 
+// Styles (same as Agent screen)
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+    backgroundColor: "#fff",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    marginBottom: 30,
+    color: "orange",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  inputContainer: {
+    marginBottom: 16,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#15247c",
+    borderRadius: 8,
+    padding: 14,
+    backgroundColor: "#fff",
+  },
+  inputError: {
+    borderColor: "#ff4444",
+  },
+  errorText: {
+    color: "#ff4444",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  button: {
+    backgroundColor: "#0d3ad1",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  buttonDisabled: {
+    backgroundColor: "#666",
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
